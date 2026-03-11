@@ -580,45 +580,7 @@ void *SDL_ShaderCross_CompileDXILFromHLSL(
         return NULL;
     }
 
-#if SDL_PLATFORM_GDK
     return SDL_ShaderCross_INTERNAL_CompileUsingDXC(info, false, size);
-#else
-    // Roundtrip to SPIR-V to support things like Structured Buffers.
-    size_t spirvSize;
-    void *spirv = SDL_ShaderCross_CompileSPIRVFromHLSL(
-        info,
-        &spirvSize);
-
-    if (spirv == NULL) {
-        return NULL;
-    }
-
-    SDL_ShaderCross_SPIRV_Info spirvInfo;
-    spirvInfo.bytecode = spirv;
-    spirvInfo.bytecode_size = spirvSize;
-    spirvInfo.entrypoint = info->entrypoint;
-    spirvInfo.shader_stage = info->shader_stage;
-    spirvInfo.props = info->props;
-
-    void *translatedSource = SDL_ShaderCross_TranspileHLSLFromSPIRV(
-        &spirvInfo);
-
-    SDL_free(spirv);
-    if (translatedSource == NULL) {
-        return NULL;
-    }
-
-    SDL_ShaderCross_HLSL_Info translatedHlslInfo;
-    SDL_memcpy(&translatedHlslInfo, info, sizeof(SDL_ShaderCross_HLSL_Info));
-    translatedHlslInfo.source = translatedSource;
-
-    void *result = SDL_ShaderCross_INTERNAL_CompileUsingDXC(
-        &translatedHlslInfo,
-        false,
-        size);
-    SDL_free(translatedSource);
-    return result;
-#endif
 }
 
 void *SDL_ShaderCross_CompileSPIRVFromHLSL(
@@ -840,7 +802,7 @@ void *SDL_ShaderCross_CompileDXBCFromHLSL(
 
     return SDL_ShaderCross_INTERNAL_CompileDXBCFromHLSL(
         info,
-        true,
+        false,
         size);
 }
 
