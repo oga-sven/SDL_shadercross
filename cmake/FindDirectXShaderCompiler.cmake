@@ -1,7 +1,7 @@
 set(required_vars)
 
 if(WIN32)
-    find_path(DirectXShaderCompiler_INCLUDE_PATH NAMES "dxcapi.h" PATH_SUFFIXES "inc" "windows/inc" HINTS ${DirectXShaderCompiler_ROOT})
+    find_path(DirectXShaderCompiler_INCLUDE_PATH NAMES "dxcapi.h" PATH_SUFFIXES "inc" "windows/inc" "include" "include/directx-dxc" HINTS ${DirectXShaderCompiler_ROOT})
     if(SDL_CPU_ARM64)
         set(extra_bin_suffix "bin/arm64" "windows/bin/arm64")
         set(extra_lib_suffix "lib/arm64" "windows/lib/arm64")
