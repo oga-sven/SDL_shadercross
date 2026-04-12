@@ -36,6 +36,7 @@ endif()
 
 # Options
 option(SDLSHADERCROSS_DXC "Enable HLSL compilation via DXC" ON)
+cmake_dependent_option(SDLSHADERCROSS_DXC_VENDORED "Build DirectXShaderCompiler from source (OFF = use pre-built)" ON "SDLSHADERCROSS_DXC;SDLSHADERCROSS_VENDORED" OFF)
 option(SDLSHADERCROSS_SHARED "Build shared SDL_shadercross library" ${SDLSHADERCROSS_SHARED_DEFAULT})
 option(SDLSHADERCROSS_STATIC "Build static SDL_shadercross library" ${SDLSHADERCROSS_STATIC_DEFAULT})
 option(SDLSHADERCROSS_SPIRVCROSS_SHARED "Link to shared library variants of dependencies" ON)
@@ -121,21 +122,25 @@ if(SDLSHADERCROSS_VENDORED)
 	endif()
 
 	if(SDLSHADERCROSS_DXC)
-		# LLVM dependencies of dxc does not support building as a shared library
-		set(BUILD_SHARED_LIBS OFF)
-		# Enabling HLSL_ENABLE_DEBUG_ITERATORS blocks DirectXShaderCompiler from adding /D_ITERATOR_DEBUG_LEVEL=0
-		set(HLSL_ENABLE_DEBUG_ITERATORS ON)
-		set(DXC_COVERAGE OFF)
-		set(HLSL_INCLUDE_TESTS OFF)
-		set(LLVM_INCLUDE_TESTS OFF)
-		set(HLSL_DISABLE_SOURCE_GENERATION TRUE)
-		set(SPIRV_BUILD_TESTS FALSE)
-		include(external/DirectXShaderCompiler/cmake/caches/PredefinedParams.cmake)
-		add_subdirectory(external/DirectXShaderCompiler EXCLUDE_FROM_ALL)
-		add_library(DirectXShaderCompiler::dxcompiler ALIAS dxcompiler)
-		add_library(DirectXShaderCompiler::dxil ALIAS dxildll)
-		list(APPEND vendored_targets dxcompiler dxildll)
-		add_dependencies(dxcompiler dxildll)
+		if(SDLSHADERCROSS_DXC_VENDORED)
+			# LLVM dependencies of dxc does not support building as a shared library
+			set(BUILD_SHARED_LIBS OFF)
+			# Enabling HLSL_ENABLE_DEBUG_ITERATORS blocks DirectXShaderCompiler from adding /D_ITERATOR_DEBUG_LEVEL=0
+			set(HLSL_ENABLE_DEBUG_ITERATORS ON)
+			set(DXC_COVERAGE OFF)
+			set(HLSL_INCLUDE_TESTS OFF)
+			set(LLVM_INCLUDE_TESTS OFF)
+			set(HLSL_DISABLE_SOURCE_GENERATION TRUE)
+			set(SPIRV_BUILD_TESTS FALSE)
+			include(external/DirectXShaderCompiler/cmake/caches/PredefinedParams.cmake)
+			add_subdirectory(external/DirectXShaderCompiler EXCLUDE_FROM_ALL)
+			add_library(DirectXShaderCompiler::dxcompiler ALIAS dxcompiler)
+			add_library(DirectXShaderCompiler::dxil ALIAS dxildll)
+			list(APPEND vendored_targets dxcompiler dxildll)
+			add_dependencies(dxcompiler dxildll)
+		else()
+			find_package(DirectXShaderCompiler REQUIRED)
+		endif()
 	endif()
 
 	export(TARGETS ${vendored_targets} NAMESPACE "SDL3_shadercross::" FILE "SDL3_shadercross-vendored-targets.cmake")
@@ -524,8 +529,8 @@ if(SDLSHADERCROSS_INSTALL_RUNTIME)
 		find_package(BISON REQUIRED)
 		ExternalProject_Add(vkd3d
 			DEPENDS 			spirv_headers vulkan_headers vulkan_loader
-			URL					"https://dl.winehq.org/vkd3d/source/vkd3d-1.18.tar.xz"
-			URL_HASH			"SHA256=576284b5e66c1f10ef90e9d0408e8c920c4a84729e463071ed070662dc876b32"
+			URL					"https://dl.winehq.org/vkd3d/source/vkd3d-1.19.tar.xz"
+			URL_HASH			"SHA256=034613605baab8ba84674f8d272cf22b5e86bc6bc03fc5728ef9bce07308baa6"
 			DOWNLOAD_EXTRACT_TIMESTAMP "1"
 			CONFIGURE_COMMAND 	"sh" "<SOURCE_DIR>/configure" "--prefix=<INSTALL_DIR>" "--enable-tests=no" "--enable-demos=no" "--disable-doxygen-doc" "CFLAGS=-I${spirv_headers_install_dir}/include -I${vulkan_headers_install_dir}/include -I${vulkan_loader_install_dir}/include ${configure_CFLAGS}" "LDFLAGS=-L${vulkan_loader_install_dir}/lib" "BISON=${BISON_EXECUTABLE}"
 			BUILD_COMMAND	 	"make"
